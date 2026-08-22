@@ -1,21 +1,16 @@
 const {
   Client,
   GatewayIntentBits,
+  SlashCommandBuilder,
   REST,
-  Routes,
-  SlashCommandBuilder
+  Routes
 } = require("discord.js");
 
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 
-if (!TOKEN) {
-  console.error("❌ TOKEN غير موجود في Environment Variables");
-  process.exit(1);
-}
-
-if (!CLIENT_ID) {
-  console.error("❌ CLIENT_ID غير موجود في Environment Variables");
+if (!TOKEN || !CLIENT_ID) {
+  console.error("❌ تأكد من وجود TOKEN و CLIENT_ID في Environment Variables في Render.");
   process.exit(1);
 }
 
@@ -23,67 +18,72 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-const commands = [
-  new SlashCommandBuilder()
-    .setName("ping")
-    .setDescription("فحص البوت"),
+// =========================
+// 💰 قاعدة بيانات بسيطة
+// =========================
 
+const users = new Map();
+
+function getUser(id) {
+  if (!users.has(id)) {
+    users.set(id, {
+      wallet: 1000,
+      bank: 0,
+      lastDaily: 0,
+      lastWork: 0
+    });
+  }
+
+  return users.get(id);
+}
+
+function money(amount) {
+  return amount.toLocaleString("en-US");
+}
+
+// =========================
+// 🎮 الأوامر
+// =========================
+
+const commands = [
   new SlashCommandBuilder()
     .setName("balance")
     .setDescription("عرض رصيدك"),
 
   new SlashCommandBuilder()
     .setName("daily")
-    .setDescription("استلام الراتب اليومي"),
+    .setDescription("استلام المكافأة اليومية"),
 
   new SlashCommandBuilder()
     .setName("work")
-    .setDescription("العمل وكسب المال")
-].map(command => command.toJSON());
+    .setDescription("العمل وكسب المال"),
 
-const rest = new REST({ version: "10" }).setToken(TOKEN);
+  new SlashCommandBuilder()
+    .setName("deposit")
+    .setDescription("إيداع المال في البنك")
+    .addIntegerOption(option =>
+      option
+        .setName("amount")
+        .setDescription("المبلغ")
+        .setRequired(true)
+        .setMinValue(1)
+    ),
 
-async function registerCommands() {
-  try {
-    console.log("🔄 تسجيل أوامر البوت...");
+  new SlashCommandBuilder()
+    .setName("withdraw")
+    .setDescription("سحب المال من البنك")
+    .addIntegerOption(option =>
+      option
+        .setName("amount")
+        .setDescription("المبلغ")
+        .setRequired(true)
+        .setMinValue(1)
+    ),
 
-    await rest.put(
-      Routes.applicationCommands(CLIENT_ID),
-      { body: commands }
-    );
-
-    console.log("✅ تم تسجيل الأوامر");
-  } catch (error) {
-    console.error("❌ فشل تسجيل الأوامر:", error);
-  }
-}
-
-client.once("ready", async () => {
-  console.log(`✅ البوت يعمل باسم ${client.user.tag}`);
-  await registerCommands();
-});
-
-client.on("interactionCreate", async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-
-  if (interaction.commandName === "ping") {
-    return interaction.reply("🏓 Pong!");
-  }
-
-  if (interaction.commandName === "balance") {
-    return interaction.reply("💰 رصيدك الحالي: **1000$**");
-  }
-
-  if (interaction.commandName === "daily") {
-    return interaction.reply("🎁 استلمت **500$** من الراتب اليومي!");
-  }
-
-  if (interaction.commandName === "work") {
-    const money = Math.floor(Math.random() * 401) + 100;
-
-    return interaction.reply(
-      `💼 اشتغلت وكسبت **${money}$**!`
-    );
+  new SlashCommandBuilder()
+    .setName("pay")
+    .setDescription("تحويل المال إلى عضو")
+    .addUserOption(option =>
   }
 });
 
