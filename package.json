@@ -2,9 +2,9 @@
   "name": "discord-bank-bot",
   "version": "1.0.0",
   "description": "Discord Bank Bot",
-  "main": "index.js",
+  "main": "jndex.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node jndex.js"
   },
   "engines": {
     "node": ">=20"
