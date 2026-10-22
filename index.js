@@ -309,10 +309,8 @@ client.on("interactionCreate", async interaction => {
 
   if (command === "rps") {
     const player = interaction.options.getString("choice");
-
     const choices = ["rock", "paper", "scissors"];
-    const botChoice =
-      choices[Math.floor(Math.random() * choices.length)];
+    const botChoice = choices[Math.floor(Math.random() * choices.length)];
 
     const names = {
       rock: "🪨 حجر",
@@ -321,8 +319,97 @@ client.on("interactionCreate", async interaction => {
     };
 
     let result;
-
     if (player === botChoice) {
       result = "🤝 تعادل!";
     } else if (
-      (player === "rock
+      (player === "rock" && botChoice === "scissors") ||
+      (player === "paper" && botChoice === "rock") ||
+      (player === "scissors" && botChoice === "paper")
+    ) {
+      result = "🎉 فزت!";
+    } else {
+      result = "❌ خسرت!";
+    }
+
+    return interaction.reply(
+      `اختيارك: **${names[player]}**\nاختيار البوت: **${names[botChoice]}**\n\n**${result}**`
+    );
+  }
+
+  if (command === "slots") {
+    const bet = interaction.options.getInteger("bet");
+
+    if (bet > user.wallet) {
+      return interaction.reply("❌ ليس لديك مال كافٍ للرهان.");
+    }
+
+    const items = ["🍇", "🍊", "🍋", "🍌", "🎰"];
+    const slot1 = items[Math.floor(Math.random() * items.length)];
+    const slot2 = items[Math.floor(Math.random() * items.length)];
+    const slot3 = items[Math.floor(Math.random() * items.length)];
+
+    if (slot1 === slot2 && slot2 === slot3) {
+      const winAmount = bet * 3;
+      user.wallet += winAmount;
+      return interaction.reply(
+        `🎰 | [ ${slot1} | ${slot2} | ${slot3} ]\n\n🎉 فزت بـ **$${formatMoney(winAmount)}**!`
+      );
+    } else {
+      user.wallet -= bet;
+      return interaction.reply(
+        `🎰 | [ ${slot1} | ${slot2} | ${slot3} ]\n\n❌ خسرت **$${formatMoney(bet)}**!`
+      );
+    }
+  }
+
+  if (command === "blackjack") {
+    const bet = interaction.options.getInteger("bet");
+
+    if (bet > user.wallet) {
+      return interaction.reply("❌ ليس لديك مال كافٍ للرهان.");
+    }
+
+    const playerCard = Math.floor(Math.random() * 11) + 1;
+    const botCard = Math.floor(Math.random() * 11) + 1;
+
+    if (playerCard > botCard) {
+      user.wallet += bet;
+      return interaction.reply(
+        `🃏 كارتك: **${playerCard}** | كارت البوت: **${botCard}**\n🎉 فزت بـ **$${formatMoney(bet)}**!`
+      );
+    } else if (playerCard < botCard) {
+      user.wallet -= bet;
+      return interaction.reply(
+        `🃏 كارتك: **${playerCard}** | كارت البوت: **${botCard}**\n❌ خسرت **$${formatMoney(bet)}**!`
+      );
+    } else {
+      return interaction.reply(
+        `🃏 كارتك: **${playerCard}** | كارت البوت: **${botCard}**\n🤝 تعادل!`
+      );
+    }
+  }
+
+  if (command === "leaderboard") {
+    const sorted = Array.from(users.entries())
+      .map(([id, data]) => ({ id, total: data.wallet + data.bank }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+
+    if (sorted.length === 0) {
+      return interaction.reply("لا يوجد بيانات حتى الآن.");
+    }
+
+    let text = "🏆 **قائمة الأغنياء:**\n\n";
+    sorted.forEach((u, i) => {
+      text += `${i + 1}. <@${u.id}>: **$${formatMoney(u.total)}**\n`;
+    });
+
+    return interaction.reply(text);
+  }
+});
+
+// تشغيل تسجيل الأوامر وتسجيل الدخول للبوت
+(async () => {
+  await registerCommands();
+  await client.login(TOKEN);
+})();
